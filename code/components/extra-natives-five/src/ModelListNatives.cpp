@@ -1,16 +1,8 @@
 #include <StdInc.h>
 #include <Hooking.h>
 
-#include <CoreConsole.h>
-
 #include <ScriptEngine.h>
 #include <ScriptSerialization.h>
-
-#include <Resource.h>
-#include <fxScripting.h>
-#include <ICoreGameInit.h>
-#include <rageVectors.h>
-#include <MinHook.h>
 
 static uint32_t(*initVehicleArchetype)(const char* name, bool a2, unsigned int a3);
 
