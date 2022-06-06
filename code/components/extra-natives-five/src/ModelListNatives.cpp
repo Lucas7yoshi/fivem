@@ -14,23 +14,13 @@ static std::unordered_map<uint32_t, std::string> g_vehicles;
 
 static uint32_t initVehicleArchetype_stub(const char* name, bool a2, unsigned int a3)
 {
-	uint32_t hash = HashString(name);
-	if (g_vehicles.find(hash) == g_vehicles.end())
-	{
-		g_vehicles.insert({ hash, name });
-	}
+	g_vehicles.insert({ HashString(name), name });
 	return initVehicleArchetype(name, a2, a3);
 }
 
 static void ArchetypeDtorHook(fwArchetype* at)
 {
-	if (at->assetType == 1)
-	{
-		if (g_vehicles.find(at->hash) != g_vehicles.end())
-		{
-			g_vehicles.erase(at->hash);
-		}
-	}
+	g_vehicles.erase(at->hash);
 	g_origArchetypeDtor(at);
 }
 
@@ -44,20 +34,18 @@ static HookFunction hookFunction([]()
 	}
 	// hook to catch deregistration of vehicles
 	{
-		auto location = hook::get_pattern("E8 ? ? ? ? 80 7B 60 01 74 39");
+		auto location = hook::get_pattern("E8 ? ? ? ? 80 7B 60 01 74 39"); // Taken from StreamingFreeTests.cpp
 		hook::set_call(&g_origArchetypeDtor, location);
 		hook::call(location, ArchetypeDtorHook);
 	}
+	fx::ScriptEngine::RegisterNativeHandler("GET_ALL_VEHICLE_MODELS", [](fx::ScriptContext& context)
 	{
-		fx::ScriptEngine::RegisterNativeHandler("GET_ALL_VEHICLE_MODELS", [](fx::ScriptContext& context)
+		// its redundant and possibly confusing to give both hashes and names, so just give the names.
+		std::vector<std::string_view> models;
+		for (const auto& pair : g_vehicles)
 		{
-			// its redundant and possibly confusing to give both hashes and names, so just give the names.
-			std::vector<std::string> models;
-			for (auto& pair : g_vehicles)
-			{
-				models.push_back(pair.second);
-			}
-			context.SetResult(fx::SerializeObject(models));
-		});
-	}
+			models.push_back(pair.second);
+		}
+		context.SetResult(fx::SerializeObject(models));
+	});
 });
